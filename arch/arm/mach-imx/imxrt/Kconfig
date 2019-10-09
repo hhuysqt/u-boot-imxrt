@@ -1,0 +1,9 @@
+if ARCH_IMXRT
+
+config IMXRT1050
+	bool
+
+config SYS_SOC
+	default "imxrt"
+
+endif
