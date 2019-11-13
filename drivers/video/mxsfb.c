@@ -5,6 +5,7 @@
  * Copyright (C) 2011-2013 Marek Vasut <marex@denx.de>
  */
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <env.h>
 #include <linux/errno.h>
@@ -51,14 +52,32 @@ __weak void mxsfb_system_setup(void)
  * 	 le:89,ri:164,up:23,lo:10,hs:10,vs:10,sync:0,vmode:0
  */
 
-static void mxs_lcd_init(u32 fb_addr, struct ctfb_res_modes *mode, int bpp)
+static void mxs_lcd_init(struct udevice *dev, u32 fb_addr,
+			 struct ctfb_res_modes *mode, int bpp)
 {
 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
 	uint32_t word_len = 0, bus_width = 0;
 	uint8_t valid_data = 0;
 
+#if CONFIG_IS_ENABLED(CLK)
+	struct clk per_clk;
+	int ret;
+
+	ret = clk_get_by_name(dev, "per", &per_clk);
+	if (ret) {
+		dev_err(dev, "Failed to get mxs clk: %d\n", ret);
+		return;
+	}
+
+	ret = clk_set_rate(&per_clk, PS2KHZ(mode->pixclock) * 1000);
+	if (ret < 0) {
+		dev_err(dev, "Failed to set mxs clk: %d\n", ret);
+		return;
+	}
+#else
 	/* Kick in the LCDIF clock */
 	mxs_set_lcdclk(MXS_LCDIF_BASE, PS2KHZ(mode->pixclock));
+#endif
 
 	/* Restart the LCDIF block */
 	mxs_reset_block(&regs->hw_lcdif_ctrl_reg);
@@ -134,10 +153,11 @@ static void mxs_lcd_init(u32 fb_addr, struct ctfb_res_modes *mode, int bpp)
 	writel(LCDIF_CTRL_RUN, &regs->hw_lcdif_ctrl_set);
 }
 
-static int mxs_probe_common(struct ctfb_res_modes *mode, int bpp, u32 fb)
+static int mxs_probe_common(struct udevice *dev, struct ctfb_res_modes *mode,
+			    int bpp, u32 fb)
 {
 	/* Start framebuffer */
-	mxs_lcd_init(fb, mode, bpp);
+	mxs_lcd_init(dev, fb, mode, bpp);
 
 #ifdef CONFIG_VIDEO_MXS_MODE_SYSTEM
 	/*
@@ -259,7 +279,7 @@ void *video_hw_init(void)
 
 	printf("%s\n", panel.modeIdent);
 
-	ret = mxs_probe_common(&mode, bpp, (u32)fb);
+	ret = mxs_probe_common(NULL, &mode, bpp, (u32)fb);
 	if (ret)
 		goto dealloc_fb;
 
@@ -336,7 +356,7 @@ static int mxs_video_probe(struct udevice *dev)
 	mode.vsync_len = timings.vsync_len.typ;
 	mode.pixclock = HZ2PS(timings.pixelclock.typ);
 
-	ret = mxs_probe_common(&mode, bpp, plat->base);
+	ret = mxs_probe_common(dev, &mode, bpp, plat->base);
 	if (ret)
 		return ret;
 
