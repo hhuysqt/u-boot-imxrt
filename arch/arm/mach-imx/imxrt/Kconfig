@@ -1,5 +1,8 @@
 if ARCH_IMXRT
 
+config IMXRT1020
+	bool
+
 config IMXRT1050
 	bool
 
