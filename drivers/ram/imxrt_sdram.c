@@ -10,6 +10,8 @@
 #include <ram.h>
 #include <asm/io.h>
 #include <linux/err.h>
+#include <mapmem.h>
+#include <dt-structs.h>
 
 /* SDRAM Command Code */
 #define SD_CC_ARD		0x0     /* Master Bus (AXI) command - Read */
@@ -165,6 +167,9 @@ struct bank_params {
 };
 
 struct imxrt_sdram_params {
+#if CONFIG_IS_ENABLED(OF_PLATDATA)
+	struct dtd_fsl_imxrt_semc dtplat;
+#endif
 	struct imxrt_semc_regs *base;
 
 	struct imxrt_sdram_mux *sdram_mux;
@@ -385,6 +390,7 @@ static int imxrt_semc_ofdata_to_platdata(struct udevice *dev)
 static int imxrt_semc_probe(struct udevice *dev)
 {
 	struct imxrt_sdram_params *params = dev_get_platdata(dev);
+	
 	int ret;
 	fdt_addr_t addr;
 
@@ -397,7 +403,14 @@ static int imxrt_semc_probe(struct udevice *dev)
 #ifdef CONFIG_CLK
 	struct clk clk;
 
+#if CONFIG_IS_ENABLED(OF_PLATDATA)
+	struct dtd_fsl_imxrt_semc *dtplat = &params->dtplat;
+
+	ret = clk_get_by_index_platdata(dev, 0, dtplat->clocks, &clk);
+#else
 	ret = clk_get_by_index(dev, 0, &clk);
+#endif
+
 	if (ret < 0)
 		return ret;
 
