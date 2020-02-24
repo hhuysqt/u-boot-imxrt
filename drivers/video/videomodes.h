@@ -92,3 +92,6 @@ int video_get_option_int(const char *options, const char *name, int def);
 
 int video_edid_dtd_to_ctfb_res_modes(struct edid_detailed_timing *t,
 				     struct ctfb_res_modes *mode);
+
+void video_ctfb_mode_to_display_timing(const struct ctfb_res_modes *mode,
+				       struct display_timing *timing);
