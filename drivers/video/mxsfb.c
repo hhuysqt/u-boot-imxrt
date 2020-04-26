@@ -72,6 +72,12 @@ static void mxs_lcd_init(struct udevice *dev, u32 fb_addr,
 		return;
 	}
 
+	ret = clk_enable(&per_clk);
+	if (ret < 0) {
+		dev_err(dev, "Failed to enable mxs clk: %d\n", ret);
+		return;
+	}
+
 	ret = clk_set_rate(&per_clk, timings->pixelclock.typ);
 	if (ret < 0) {
 		dev_err(dev, "Failed to set mxs clk: %d\n", ret);
