@@ -810,17 +810,6 @@ int fdtdec_parse_phandle_with_args(const void *blob, int src_node,
 	return rc;
 }
 
-int fdtdec_get_child_count(const void *blob, int node)
-{
-	int subnode;
-	int num = 0;
-
-	fdt_for_each_subnode(subnode, blob, node)
-		num++;
-
-	return num;
-}
-
 int fdtdec_get_byte_array(const void *blob, int node, const char *prop_name,
 			  u8 *array, int count)
 {
@@ -1311,7 +1300,8 @@ int fdtdec_add_reserved_memory(void *blob, const char *basename,
 			continue;
 		}
 
-		if (addr == carveout->start && (addr + size) == carveout->end) {
+		if (addr == carveout->start && (addr + size - 1) ==
+						carveout->end) {
 			if (phandlep)
 				*phandlep = fdt_get_phandle(blob, node);
 			return 0;
