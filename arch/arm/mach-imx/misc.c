@@ -55,8 +55,8 @@ int mxs_reset_block(struct mxs_register_32 *reg)
 	/* Set SFTRST */
 	writel(MXS_BLOCK_SFTRST, &reg->reg_set);
 
-	/* Wait for CLKGATE being set */
-	if (mxs_wait_mask_set(reg, MXS_BLOCK_CLKGATE, RESET_MAX_TIMEOUT))
+	/* Wait for SFTRST being set */
+	if (mxs_wait_mask_set(reg, MXS_BLOCK_SFTRST, RESET_MAX_TIMEOUT))
 		return 1;
 
 	/* Clear SFTRST */
